@@ -6,31 +6,116 @@
   <title>無料鑑定フォーム</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    body { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans JP",Arial,sans-serif; padding:20px; line-height:1.7; }
-    h2 { font-size:20px; margin-bottom:20px; }
-    label { display:block; margin:16px 0 6px; font-weight:600; }
-    input, textarea { font-size:16px; width:100%; padding:10px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box; }
-    textarea { resize: vertical; }
-    button { margin-top:20px; width:100%; padding:14px; border:0; border-radius:8px; background:#06c755; color:#fff; font-size:18px; font-weight:600; cursor:pointer; }
-    button[disabled]{opacity:.6; cursor:not-allowed;}
-    .msg{margin-top:12px; font-size:14px;}
+    body {
+      font-family: "Noto Sans JP", Arial, sans-serif;
+      background: #fafafa;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    h2 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin-bottom: 28px;
+    }
+    label {
+      font-weight: 600;
+      font-size: 16px;
+      display: block;
+      margin-bottom: 6px;
+    }
+    .required {
+      color: red;
+      margin-left: 4px;
+      font-size: 14px;
+    }
+    small {
+      display: block;
+      color: #666;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    select, input[type=text], textarea {
+      width: 100%;
+      padding: 10px;
+      font-size: 15px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #fff;
+      box-sizing: border-box;
+    }
+    .date-selects {
+      display: flex;
+      gap: 8px;
+    }
+    .date-selects select {
+      flex: 1;
+    }
+    textarea {
+      resize: vertical;
+    }
+    button {
+      width: 100%;
+      background: #06c755;
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 18px;
+      font-weight: 600;
+      padding: 14px;
+      cursor: pointer;
+    }
+    button[disabled] {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+    .msg {
+      margin-top: 14px;
+      font-size: 14px;
+      color: #333;
+    }
   </style>
 </head>
 <body>
   <h2>無料鑑定フォーム</h2>
 
   <form id="form">
-    <label>お名前</label>
-    <input type="text" name="name" required />
+    <div class="form-group">
+      <label>お名前 <span class="required">*</span></label>
+      <input type="text" name="name" required />
+    </div>
 
-    <label>生年月日</label>
-    <input type="date" name="birth" required />
+    <div class="form-group">
+      <label>生年月日をご記入ください。 <span class="required">*</span></label>
+      <div class="date-selects">
+        <select name="year" required>
+          <option value="">西暦</option>
+        </select>
+        <select name="month" required>
+          <option value="">月</option>
+          ${[...Array(12)].map((_,i)=>`<option value="${i+1}">${i+1}</option>`).join("")}
+        </select>
+        <select name="day" required>
+          <option value="">日</option>
+          ${[...Array(31)].map((_,i)=>`<option value="${i+1}">${i+1}</option>`).join("")}
+        </select>
+      </div>
+    </div>
 
-    <label>現在のお悩み</label>
-    <textarea name="trouble" rows="4" required></textarea>
+    <div class="form-group">
+      <label>現在のお悩みをご記入ください。 <span class="required">*</span></label>
+      <textarea name="trouble" rows="4" required></textarea>
+      <small>できるだけ詳しく書いていただいた方が、鑑定の精度が上がります。</small>
+    </div>
 
-    <label>理想の未来</label>
-    <textarea name="future" rows="4" required></textarea>
+    <div class="form-group">
+      <label>理想の未来をご記入ください。 <span class="required">*</span></label>
+      <textarea name="future" rows="4" required></textarea>
+      <small>できるだけ詳しく書いていただいた方が、鑑定の精度が上がります。</small>
+    </div>
 
     <input type="hidden" name="lineId" id="lineId" />
     <button id="submitBtn" type="submit">回答する</button>
@@ -38,8 +123,17 @@
   </form>
 
   <script>
-    const LIFF_ID = "2008039326-A8qpaB1Q";   // 例: 2000000000-xxxxxx
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbxQYdkrNywctDEnh4nC3fElwIavPHRn6w6tDUpR79hBtb8aVQELh55f4uJ2mOCamdzMTw/exec";   // 例: https://script.google.com/macros/s/xxxxx/exec
+    const LIFF_ID = "2008039326-A8qpaB1Q";   // ←差し替え
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxQYdkrNywctDEnh4nC3fElwIavPHRn6w6tDUpR79hBtb8aVQELh55f4uJ2mOCamdzMTw/exec";   // ←差し替え
+
+    // 年リストを生成
+    const yearSel = document.querySelector("select[name=year]");
+    const thisYear = new Date().getFullYear();
+    for (let y = thisYear; y >= 1900; y--) {
+      const opt = document.createElement("option");
+      opt.value = y; opt.textContent = y;
+      yearSel.appendChild(opt);
+    }
 
     (async () => {
       await liff.init({ liffId: LIFF_ID });
@@ -57,13 +151,22 @@
       const note = document.getElementById("note");
       btn.disabled = true; btn.textContent = "送信中...";
 
+      // date → YYYY/MM/DD にまとめる
+      const formData = new FormData(e.target);
+      const year = formData.get("year");
+      const month = formData.get("month");
+      const day = formData.get("day");
+      if (year && month && day) {
+        formData.append("birth", `${year}-${month}-${day}`);
+      }
+
       try {
-        const res = await fetch(GAS_URL, { method: "POST", body: new FormData(e.target) });
+        const res = await fetch(GAS_URL, { method: "POST", body: formData });
         const text = await res.text();
         if (!res.ok || !/^OK/.test(text)) throw new Error(text || "GASエラー");
 
-        note.textContent = "送信完了。鑑定結果をLINEに送信しました。";
-        setTimeout(() => { try { liff.closeWindow(); } catch(_) {} }, 600);
+        // 送信後は指定のURLへ
+        window.location.href = "https://lin.ee/l2dPovS";
 
       } catch (err) {
         note.textContent = "送信に失敗しました: " + err.message;
