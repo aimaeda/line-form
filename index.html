@@ -32,7 +32,6 @@
       font-size: 18px; font-weight: 600;
       padding: 14px; cursor: pointer;
     }
-    .msg { margin-top: 14px; font-size: 14px; color: #333; }
   </style>
 </head>
 <body>
@@ -84,6 +83,7 @@
     const monthSel = document.getElementById("month");
     const daySel = document.getElementById("day");
     const thisYear = new Date().getFullYear();
+
     for (let y = thisYear; y >= 1900; y--) {
       yearSel.add(new Option(y, y));
     }
@@ -105,7 +105,7 @@
       document.getElementById("lineId").value = profile.userId;
     })();
 
-    // 送信処理
+    // 即時リダイレクトで送信
     document.getElementById("form").addEventListener("submit", (e) => {
       e.preventDefault();
 
@@ -117,10 +117,10 @@
         formData.append("birth", `${year}-${month}-${day}`);
       }
 
-      // 🔹 fetchを待たずにバックグラウンドで送信
+      // 非同期で送信
       fetch(GAS_URL, { method: "POST", body: formData });
 
-      // 🔹 即時トーク画面（LINE URL）へ遷移
+      // 即LINEトークへリダイレクト
       window.location.href = "https://lin.ee/l2dPovS";
     });
   </script>
