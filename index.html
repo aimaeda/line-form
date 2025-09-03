@@ -13,70 +13,26 @@
       max-width: 600px;
       margin: auto;
     }
-    h2 {
-      font-size: 22px;
-      font-weight: 600;
-      margin-bottom: 20px;
-    }
-    .form-group {
-      margin-bottom: 28px;
-    }
-    label {
-      font-weight: 600;
-      font-size: 16px;
-      display: block;
-      margin-bottom: 6px;
-    }
-    .required {
-      color: red;
-      margin-left: 4px;
-      font-size: 14px;
-    }
-    small {
-      display: block;
-      color: #666;
-      font-size: 13px;
-      margin-top: 4px;
-    }
+    h2 { font-size: 22px; font-weight: 600; margin-bottom: 20px; }
+    .form-group { margin-bottom: 28px; }
+    label { font-weight: 600; font-size: 16px; display: block; margin-bottom: 6px; }
+    .required { color: red; margin-left: 4px; font-size: 14px; }
+    small { display: block; color: #666; font-size: 13px; margin-top: 4px; }
     select, input[type=text], textarea {
-      width: 100%;
-      padding: 10px;
-      font-size: 15px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      background: #fff;
-      box-sizing: border-box;
+      width: 100%; padding: 10px; font-size: 15px;
+      border: 1px solid #ddd; border-radius: 6px;
+      background: #fff; box-sizing: border-box;
     }
-    .date-selects {
-      display: flex;
-      gap: 8px;
-    }
-    .date-selects select {
-      flex: 1;
-    }
-    textarea {
-      resize: vertical;
-    }
+    .date-selects { display: flex; gap: 8px; }
+    .date-selects select { flex: 1; }
+    textarea { resize: vertical; }
     button {
-      width: 100%;
-      background: #06c755;
-      border: none;
-      border-radius: 8px;
-      color: #fff;
-      font-size: 18px;
-      font-weight: 600;
-      padding: 14px;
-      cursor: pointer;
+      width: 100%; background: #06c755; border: none;
+      border-radius: 8px; color: #fff;
+      font-size: 18px; font-weight: 600;
+      padding: 14px; cursor: pointer;
     }
-    button[disabled] {
-      opacity: .6;
-      cursor: not-allowed;
-    }
-    .msg {
-      margin-top: 14px;
-      font-size: 14px;
-      color: #333;
-    }
+    .msg { margin-top: 14px; font-size: 14px; color: #333; }
   </style>
 </head>
 <body>
@@ -91,16 +47,14 @@
     <div class="form-group">
       <label>生年月日をご記入ください。 <span class="required">*</span></label>
       <div class="date-selects">
-        <select name="year" required>
+        <select name="year" id="year" required>
           <option value="">西暦</option>
         </select>
-        <select name="month" required>
+        <select name="month" id="month" required>
           <option value="">月</option>
-          ${[...Array(12)].map((_,i)=>`<option value="${i+1}">${i+1}</option>`).join("")}
         </select>
-        <select name="day" required>
+        <select name="day" id="day" required>
           <option value="">日</option>
-          ${[...Array(31)].map((_,i)=>`<option value="${i+1}">${i+1}</option>`).join("")}
         </select>
       </div>
     </div>
@@ -119,22 +73,28 @@
 
     <input type="hidden" name="lineId" id="lineId" />
     <button id="submitBtn" type="submit">回答する</button>
-    <div id="note" class="msg"></div>
   </form>
 
   <script>
     const LIFF_ID = "2008039326-A8qpaB1Q";   // ←差し替え
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzMeVig_0IAu5uTNKOKr4g92aeYdeA4eXrQLGZbcH0QMYKVhKfBNOCNKY_SD-Z-B2jScw/exec";   // ←差し替え
 
-    // 年リストを生成
-    const yearSel = document.querySelector("select[name=year]");
+    // 年・月・日プルダウン生成
+    const yearSel = document.getElementById("year");
+    const monthSel = document.getElementById("month");
+    const daySel = document.getElementById("day");
     const thisYear = new Date().getFullYear();
     for (let y = thisYear; y >= 1900; y--) {
-      const opt = document.createElement("option");
-      opt.value = y; opt.textContent = y;
-      yearSel.appendChild(opt);
+      yearSel.add(new Option(y, y));
+    }
+    for (let m = 1; m <= 12; m++) {
+      monthSel.add(new Option(m, m));
+    }
+    for (let d = 1; d <= 31; d++) {
+      daySel.add(new Option(d, d));
     }
 
+    // LIFF初期化
     (async () => {
       await liff.init({ liffId: LIFF_ID });
       if (!liff.isLoggedIn()) {
@@ -145,13 +105,10 @@
       document.getElementById("lineId").value = profile.userId;
     })();
 
-    document.getElementById("form").addEventListener("submit", async (e) => {
+    // 送信処理
+    document.getElementById("form").addEventListener("submit", (e) => {
       e.preventDefault();
-      const btn = document.getElementById("submitBtn");
-      const note = document.getElementById("note");
-      btn.disabled = true; btn.textContent = "送信中...";
 
-      // date → YYYY/MM/DD にまとめる
       const formData = new FormData(e.target);
       const year = formData.get("year");
       const month = formData.get("month");
@@ -160,18 +117,11 @@
         formData.append("birth", `${year}-${month}-${day}`);
       }
 
-      try {
-        const res = await fetch(GAS_URL, { method: "POST", body: formData });
-        const text = await res.text();
-        if (!res.ok || !/^OK/.test(text)) throw new Error(text || "GASエラー");
+      // 🔹 fetchを待たずにバックグラウンドで送信
+      fetch(GAS_URL, { method: "POST", body: formData });
 
-        // 送信後は指定のURLへ
-        window.location.href = "https://lin.ee/l2dPovS";
-
-      } catch (err) {
-        note.textContent = "送信に失敗しました: " + err.message;
-        btn.disabled = false; btn.textContent = "回答する";
-      }
+      // 🔹 即時トーク画面（LINE URL）へ遷移
+      window.location.href = "https://lin.ee/l2dPovS";
     });
   </script>
 </body>
