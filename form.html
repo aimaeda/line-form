@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>霊視鑑定フォーム</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  </head>
+  <body>
+    <h2>霊視鑑定 無料フォーム</h2>
+
+    <form id="form">
+      <label>名前：<input type="text" name="name" required /></label
+      ><br /><br />
+      <label>生年月日：<input type="date" name="birth" required /></label
+      ><br /><br />
+      <label
+        >お悩み：<textarea name="trouble" rows="5" required></textarea></label
+      ><br /><br />
+      <input type="hidden" name="lineId" id="lineId" />
+      <button type="submit">送信</button>
+    </form>
+
+    <script>
+      // LIFF初期化
+      liff.init({ liffId: "2008039326-A8qpaB1Q" }).then(() => {
+        if (!liff.isLoggedIn()) {
+          liff.login();
+        } else {
+          liff.getProfile().then((profile) => {
+            document.getElementById("lineId").value = profile.userId;
+          });
+        }
+      });
+
+      // フォーム送信処理
+      document.getElementById("form").addEventListener("submit", function (e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        fetch("https://script.google.com/a/macros/aielite.co.jp/s/AKfycbylsLKt8Ogj_SnAe_b_KBgPQgZxGrQz_cbaBAm415orxTKWgfT80KZrIguGz3FZ908Zhw/exec", {
+          method: "POST",
+          body: formData,
+        }).then(() => {
+          alert("ご回答ありがとうございました！");
+          liff
+            .sendMessages([
+              {
+                type: "text",
+                text: "ご回答ありがとうございます！30分ほどで霊視鑑定の結果をお送りします。",
+              },
+            ])
+            .then(() => liff.closeWindow());
+        });
+      });
+    </script>
+  </body>
+</html>
