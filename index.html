@@ -6,32 +6,18 @@
   <title>無料鑑定フォーム</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    body {
-      font-family: "Noto Sans JP", Arial, sans-serif;
-      background: #fafafa;
-      padding: 20px;
-      max-width: 600px;
-      margin: auto;
-    }
-    h2 { font-size: 22px; font-weight: 600; margin-bottom: 20px; }
-    .form-group { margin-bottom: 28px; }
-    label { font-weight: 600; font-size: 16px; display: block; margin-bottom: 6px; }
-    .required { color: red; margin-left: 4px; font-size: 14px; }
-    small { display: block; color: #666; font-size: 13px; margin-top: 4px; }
-    select, input[type=text], textarea {
-      width: 100%; padding: 10px; font-size: 15px;
-      border: 1px solid #ddd; border-radius: 6px;
-      background: #fff; box-sizing: border-box;
-    }
-    .date-selects { display: flex; gap: 8px; }
-    .date-selects select { flex: 1; }
-    textarea { resize: vertical; }
-    button {
-      width: 100%; background: #06c755; border: none;
-      border-radius: 8px; color: #fff;
-      font-size: 18px; font-weight: 600;
-      padding: 14px; cursor: pointer;
-    }
+    body{font-family:"Noto Sans JP",Arial,sans-serif;background:#fafafa;padding:20px;max-width:600px;margin:auto}
+    h2{font-size:22px;font-weight:600;margin-bottom:20px}
+    .form-group{margin-bottom:28px}
+    label{font-weight:600;font-size:16px;display:block;margin-bottom:6px}
+    .required{color:#e53935;margin-left:4px;font-size:14px}
+    small{display:block;color:#666;font-size:13px;margin-top:4px}
+    select,input[type=text],textarea{width:100%;padding:10px;font-size:15px;border:1px solid #ddd;border-radius:6px;background:#fff;box-sizing:border-box}
+    .date-selects{display:flex;gap:8px}
+    .date-selects select{flex:1}
+    textarea{resize:vertical}
+    button{width:100%;background:#06c755;border:0;border-radius:8px;color:#fff;font-size:18px;font-weight:600;padding:14px;cursor:pointer}
+    .status{margin-top:12px;font-size:14px;color:#333;min-height:20px}
   </style>
 </head>
 <body>
@@ -72,56 +58,46 @@
 
     <input type="hidden" name="lineId" id="lineId" />
     <button id="submitBtn" type="submit">回答する</button>
+    <div id="status" class="status"></div>
   </form>
 
   <script>
-    const LIFF_ID = "2008039326-A8qpaB1Q";   // ←差し替え
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbzMeVig_0IAu5uTNKOKr4g92aeYdeA4eXrQLGZbcH0QMYKVhKfBNOCNKY_SD-Z-B2jScw/exec";   // ←差し替え
+    const LIFF_ID = "2008039326-A8qpaB1Q";      // ←差し替え
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxfBfoCvfuf3D5jQjwTIy4wSg8SkxMMVbnrkD40gfZ-I6Nrz12nIIDMOwOdtDH_D4bgDA/exec";      // ←差し替え（/exec で終わるURL）
+    const TALK_URL = "https://lin.ee/l2dPovS";
 
-    // 年・月・日プルダウン生成
+    // 年/月/日プルダウン
     const yearSel = document.getElementById("year");
     const monthSel = document.getElementById("month");
     const daySel = document.getElementById("day");
     const thisYear = new Date().getFullYear();
-
-    for (let y = thisYear; y >= 1900; y--) {
-      yearSel.add(new Option(y, y));
-    }
-    for (let m = 1; m <= 12; m++) {
-      monthSel.add(new Option(m, m));
-    }
-    for (let d = 1; d <= 31; d++) {
-      daySel.add(new Option(d, d));
-    }
+    for (let y=thisYear; y>=1900; y--) yearSel.add(new Option(y, y));
+    for (let m=1; m<=12; m++) monthSel.add(new Option(m, m));
+    for (let d=1; d<=31; d++) daySel.add(new Option(d, d));
 
     // LIFF初期化
     (async () => {
       await liff.init({ liffId: LIFF_ID });
-      if (!liff.isLoggedIn()) {
-        liff.login({ redirectUri: location.href });
-        return;
-      }
+      if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
       const profile = await liff.getProfile();
       document.getElementById("lineId").value = profile.userId;
     })();
 
-    // 即時リダイレクトで送信
+    // 送信 ⇒ すぐリダイレクト（fetchは待たない）
     document.getElementById("form").addEventListener("submit", (e) => {
       e.preventDefault();
+      const status = document.getElementById("status");
+      status.textContent = "送信中です…";
 
-      const formData = new FormData(e.target);
-      const year = formData.get("year");
-      const month = formData.get("month");
-      const day = formData.get("day");
-      if (year && month && day) {
-        formData.append("birth", `${year}-${month}-${day}`);
-      }
+      const fd = new FormData(e.target);
+      const y = fd.get("year"), m = fd.get("month"), d = fd.get("day");
+      if (y && m && d) fd.append("birth", `${y}-${m}-${d}`);
 
-      // 非同期で送信
-      fetch(GAS_URL, { method: "POST", body: formData });
+      // バックグラウンド送信
+      fetch(GAS_URL, { method: "POST", body: fd }).catch(()=>{});
 
-      // 即LINEトークへリダイレクト
-      window.location.href = "https://lin.ee/l2dPovS";
+      // 体感を最速に：1.2秒でトークへ
+      setTimeout(()=>{ window.location.href = TALK_URL; }, 1200);
     });
   </script>
 </body>
